@@ -1,0 +1,34 @@
+name: CoralNPU RTL Build
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          ssh-key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          # Avoid downloading Bazel every time.
+          bazelisk-cache: true
+          # Store build cache per workflow.
+          disk-cache: ${{ github.workflow }}
+          # Share repository cache between workflows.
+          repository-cache: true
+      - name: build
+        run: bazel build //hdl/chisel/src/coralnpu:rvv_core_mini_axi_cc_library_emit_verilog
+      - uses: actions/upload-artifact@v3
+        with:
+          name: RvvCoreMiniAxi
+          path: |
+            ${{ github.workspace }}/bazel-bin/hdl/chisel/src/coralnpu/RvvCoreMiniAxi.sv
+            ${{ github.workspace }}/bazel-bin/hdl/chisel/src/coralnpu/RvvCoreMiniAxi.zip
+          
